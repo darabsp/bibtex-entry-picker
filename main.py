@@ -1,5 +1,5 @@
+from formatting_style import Style
 from pybtex.database import parse_file
-from pybtex.style.formatting.plain import Style as PlainStyle
 import os
 import pyperclip
 import sys
@@ -23,7 +23,7 @@ def main(args) -> None:
   if entry is None:
     raise KeyError(f'キーが一致するエントリが見つかりません ({entry_key})')
 
-  formatted = PlainStyle().format_entry(None, entry).text.render_as('text')
+  formatted = Style().format_entry(None, entry).text.render_as('text')
 
   pyperclip.copy(formatted)
   print(f'コピーしました: {formatted}')
