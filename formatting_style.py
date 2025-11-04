@@ -82,6 +82,7 @@ class Style(BaseStyle):
         self.format_pages(entry),
         optional [self.format_date(entry)],
       ],
+      sentence [optional_field('note')],
     ]
 
   def get_inproceedings_template(self, entry):
@@ -92,8 +93,10 @@ class Style(BaseStyle):
         self.format_booktitle(entry),
         optional [self.format_volume(entry)],
         optional [self.format_number(entry)],
+        optional [self.format_pages(entry)],
         optional [self.format_date(entry)],
       ],
+      sentence [optional_field('note')],
     ]
 
   def get_mastersthesis_template(self, entry):
@@ -105,4 +108,13 @@ class Style(BaseStyle):
         field('school'),
         optional [self.format_date(entry)],
       ],
+      sentence [optional_field('note')],
+    ]
+
+  def get_misc_template(self, entry):
+    return toplevel [
+      sentence [self.format_author(entry)],
+      sentence [field('title')],
+      sentence [optional_field('howpublished')],
+      sentence [optional_field('note')],
     ]
