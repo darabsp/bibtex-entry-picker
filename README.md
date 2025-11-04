@@ -12,3 +12,5 @@ BibTeXのエントリを文字列に整形してクリップボードにコピ�
 ### Execute
 
 `uv run main.py <bib file path> <entry key>`
+
+`entry key` が完全一致せず、部分一致検索によってエントリが一意に特定できる場合はそれがコピーされます。
