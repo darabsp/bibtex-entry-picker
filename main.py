@@ -21,7 +21,13 @@ def main(args) -> None:
   entry = bib.entries.get(entry_key)
 
   if entry is None:
-    raise KeyError(f'キーが一致するエントリが見つかりません ({entry_key})')
+    autocomplete = list(filter(lambda key: entry_key.lower() in key.lower(), bib.entries.keys()))
+    if len(autocomplete) == 1:
+      entry = bib.entries.get(autocomplete[0])
+    elif len(autocomplete) > 1:
+      raise KeyError(f'エントリが一意に定まりません ({entry_key}) (候補: {", ".join(autocomplete)})')
+    else:
+      raise KeyError(f'エントリが見つかりません ({entry_key})')
 
   formatted = Style().format_entry(None, entry).text.render_as('text')
 
