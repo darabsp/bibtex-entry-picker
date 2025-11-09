@@ -4,14 +4,29 @@ BibTeXのエントリを文字列に整形してクリップボードにコピ�
 
 ## How to use
 
-### Install packages
+### Installation
+
+```bash
+pip install git+https://github.com/darabsp/bibtex-entry-picker.git
+```
+
+#### to develop
 
 パッケージ管理に[uv](https://docs.astral.sh/uv/)を使用しています。
-`uv sync` を実行することでパッケージのインストールが可能です。
+uvのインストール方法については<https://docs.astral.sh/uv/getting-started/installation/>を参照してください。
+
+```bash
+git clone https://github.com/darabsp/bibtex-entry-picker.git
+cd bibtex-entry-picker
+uv sync
+```
 
 ### Execute
 
-`uv run main.py <bib> <key>`
+```bash
+bibtex-entry-picker <bib> <key>
+bibpick <bib> <key>
+```
 
 `bib` の入力に応じて下記のように検索が行われます。
 
