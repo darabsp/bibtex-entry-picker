@@ -11,6 +11,8 @@ def main() -> None:
     path = search_bib_file(args.bib)
     key = args.key
 
+    print(f'以下のファイルを参照します: {path}')
+
     bib = parse_file(path)
     entry = search_entry(bib.entries, key)
     formatted = Style().format_entry(None, entry).text.render_as('text')

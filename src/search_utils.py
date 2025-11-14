@@ -4,10 +4,22 @@ from pybtex.database import Entry
 def _search_file_by_path(path: str) -> str | None:
   if os.path.isfile(path):
     return path
-  else:
-    return None
 
-def _search_file_in_bibinputs(filename: str) -> str | None:
+  return None
+
+def _search_file_in_current_directory(filename: str, partial_search: bool) -> str | None:
+  if os.path.isfile(filename):
+    return os.path.abspath(filename)
+
+  if partial_search:
+    all_bib_files = [fn for fn in os.listdir() if os.path.isfile(fn)]
+    suggestions = [fn for fn in all_bib_files if filename.removesuffix('.bib').lower() in fn.lower()]
+    if len(suggestions) == 1:
+      return os.path.abspath(suggestions[0])
+
+  return None
+
+def _search_file_in_bibinputs(filename: str, partial_search: bool) -> str | None:
   bibinputs = os.environ.get('BIBINPUTS')
   if bibinputs is None:
     return None
@@ -16,30 +28,50 @@ def _search_file_in_bibinputs(filename: str) -> str | None:
   if directories == []:
     return None
 
+  all_bib_files = []
   for directory in directories:
     path = os.path.join(directory, filename)
     if os.path.isfile(path):
-      return path
+      return os.path.abspath(path)
+
+    all_bib_files.extend([os.path.join(directory, fn) for fn in os.listdir(directory) if os.path.isfile(os.path.join(directory, fn)) and fn.endswith('.bib')])
+
+  if partial_search:
+    suggestions = [fn for fn in all_bib_files if filename.removesuffix('.bib').lower() in fn.lower()]
+    if len(suggestions) == 1:
+      return os.path.abspath(suggestions[0])
 
   return None
 
 # .bibファイルを探してそのpathを返す
 # パスが入力された場合 (e.g. ../bibtex/biblio.bib): 指定されたパスのみ検索, 環境変数の検索は行わない
 # ファイル名のみが入力された場合 (e.g. biblio.bib, biblio): カレントディレクトリと環境変数を検索
-def search_bib_file(input_path: str) -> str:
-  query = input_path if input_path.endswith('.bib') else input_path + '.bib'
+def search_bib_file(query: str) -> str:
+  corrected_query = query if query.endswith('.bib') else query + '.bib'
+  dirname = os.path.dirname(corrected_query)
+  filename = os.path.basename(corrected_query)
+  fullpath = os.path.join(dirname, filename)
 
-  result = _search_file_by_path(query)
-  if result is not None:
-    return result
-
-  if os.path.dirname(query) == '':
-    result = _search_file_in_bibinputs(query)
+  if dirname != '':
+    result = _search_file_by_path(fullpath)
+    if result is not None:
+      return result
+  else:
+    result = _search_file_in_current_directory(filename, False)
+    if result is not None:
+      return result
+    result = _search_file_in_bibinputs(filename, False)
+    if result is not None:
+      return result
+    result = _search_file_in_current_directory(filename, True)
+    if result is not None:
+      return result
+    result = _search_file_in_bibinputs(filename, True)
     if result is not None:
       return result
 
-  error_msg = f'ファイルが見つかりません ({input_path})'
-  if os.path.dirname(query) == '':
+  error_msg = f'ファイルが見つかりません ({query})'
+  if dirname == '':
     error_msg += ', 環境変数 "BIBINPUTS" の内容が正しいかあわせて確認してください'
   raise FileNotFoundError(error_msg)
 
