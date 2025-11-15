@@ -1,45 +1,66 @@
-import os
+from os import environ, pathsep, sep
+from pathlib import Path
 from pybtex.database import Entry
 
-def _search_file_by_path(path: str) -> str | None:
-  if os.path.isfile(path):
-    return path
-  else:
-    return None
+BIB_SUFFIX = '.bib'
 
-def _search_file_in_bibinputs(filename: str) -> str | None:
-  bibinputs = os.environ.get('BIBINPUTS')
+def _partial_file_search(query: Path, directories: list[Path]) -> Path | None:
+  matches = []
+  for directory in directories:
+    matches.extend(directory.glob(f'*{query.stem}*{BIB_SUFFIX}'))
+  if len(matches) == 1:
+    return matches[0]
+
+def _search_file_by_path(path: Path) -> Path | None:
+  return path.absolute() if path.is_file() else None
+
+def _search_file_in_current_directory(name: Path, partial_search: bool) -> Path | None:
+  if partial_search:
+    return _partial_file_search(name, [Path.cwd()])
+  else:
+    return name if name.is_file() else None
+
+def _search_file_in_bibinputs(name: Path, partial_search: bool) -> Path | None:
+  bibinputs = environ.get('BIBINPUTS')
   if bibinputs is None:
     return None
 
-  directories = [directory for directory in bibinputs.split(os.pathsep) if os.path.isdir(directory)]
+  directories = [Path(directory) for directory in bibinputs.split(pathsep) if Path(directory).is_dir()]
   if directories == []:
     return None
 
-  for directory in directories:
-    path = os.path.join(directory, filename)
-    if os.path.isfile(path):
-      return path
-
-  return None
+  if partial_search:
+    return _partial_file_search(name, directories)
+  else:
+    for directory in directories:
+      path = directory.joinpath(name)
+      if path.is_file():
+        return path
 
 # .bibファイルを探してそのpathを返す
 # パスが入力された場合 (e.g. ../bibtex/biblio.bib): 指定されたパスのみ検索, 環境変数の検索は行わない
 # ファイル名のみが入力された場合 (e.g. biblio.bib, biblio): カレントディレクトリと環境変数を検索
-def search_bib_file(input_path: str) -> str:
-  query = input_path if input_path.endswith('.bib') else input_path + '.bib'
+def search_bib_file(query: str) -> Path:
+  path = Path(query).with_suffix(BIB_SUFFIX)
 
-  result = _search_file_by_path(query)
-  if result is not None:
-    return result
+  if str(path).count(sep) > 0:
+    result = _search_file_by_path(path)
+    if result:
+      return result.absolute()
+  else:
+    search_list = [
+      lambda: _search_file_in_current_directory(path, False),
+      lambda: _search_file_in_bibinputs(path, False),
+      lambda: _search_file_in_current_directory(path, True),
+      lambda: _search_file_in_bibinputs(path, True),
+    ]
+    for search in search_list:
+      result = search()
+      if result:
+        return result.absolute()
 
-  if os.path.dirname(query) == '':
-    result = _search_file_in_bibinputs(query)
-    if result is not None:
-      return result
-
-  error_msg = f'ファイルが見つかりません ({input_path})'
-  if os.path.dirname(query) == '':
+  error_msg = f'ファイルが見つかりません ({query})'
+  if str(path).count(sep) == 0:
     error_msg += ', 環境変数 "BIBINPUTS" の内容が正しいかあわせて確認してください'
   raise FileNotFoundError(error_msg)
 
