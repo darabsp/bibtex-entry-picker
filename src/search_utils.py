@@ -1,77 +1,66 @@
-import os
+from os import environ, pathsep, sep
+from pathlib import Path
 from pybtex.database import Entry
 
-def _search_file_by_path(path: str) -> str | None:
-  if os.path.isfile(path):
-    return path
+BIB_SUFFIX = '.bib'
 
-  return None
+def _partial_file_search(query: Path, directories: list[Path]) -> Path | None:
+  matches = []
+  for directory in directories:
+    matches.extend(directory.glob(f'*{query.stem}*{BIB_SUFFIX}'))
+  if len(matches) == 1:
+    return matches[0]
 
-def _search_file_in_current_directory(filename: str, partial_search: bool) -> str | None:
-  if os.path.isfile(filename):
-    return os.path.abspath(filename)
+def _search_file_by_path(path: Path) -> Path | None:
+  return path.absolute() if path.is_file() else None
 
+def _search_file_in_current_directory(name: Path, partial_search: bool) -> Path | None:
   if partial_search:
-    all_bib_files = [fn for fn in os.listdir() if os.path.isfile(fn)]
-    suggestions = [fn for fn in all_bib_files if filename.removesuffix('.bib').lower() in fn.lower()]
-    if len(suggestions) == 1:
-      return os.path.abspath(suggestions[0])
+    return _partial_file_search(name, [Path.cwd()])
+  else:
+    return name if name.is_file() else None
 
-  return None
-
-def _search_file_in_bibinputs(filename: str, partial_search: bool) -> str | None:
-  bibinputs = os.environ.get('BIBINPUTS')
+def _search_file_in_bibinputs(name: Path, partial_search: bool) -> Path | None:
+  bibinputs = environ.get('BIBINPUTS')
   if bibinputs is None:
     return None
 
-  directories = [directory for directory in bibinputs.split(os.pathsep) if os.path.isdir(directory)]
+  directories = [Path(directory) for directory in bibinputs.split(pathsep) if Path(directory).is_dir()]
   if directories == []:
     return None
 
-  all_bib_files = []
-  for directory in directories:
-    path = os.path.join(directory, filename)
-    if os.path.isfile(path):
-      return os.path.abspath(path)
-
-    all_bib_files.extend([os.path.join(directory, fn) for fn in os.listdir(directory) if os.path.isfile(os.path.join(directory, fn)) and fn.endswith('.bib')])
-
   if partial_search:
-    suggestions = [fn for fn in all_bib_files if filename.removesuffix('.bib').lower() in fn.lower()]
-    if len(suggestions) == 1:
-      return os.path.abspath(suggestions[0])
-
-  return None
+    return _partial_file_search(name, directories)
+  else:
+    for directory in directories:
+      path = directory.joinpath(name)
+      if path.is_file():
+        return path
 
 # .bibファイルを探してそのpathを返す
 # パスが入力された場合 (e.g. ../bibtex/biblio.bib): 指定されたパスのみ検索, 環境変数の検索は行わない
 # ファイル名のみが入力された場合 (e.g. biblio.bib, biblio): カレントディレクトリと環境変数を検索
-def search_bib_file(query: str) -> str:
-  corrected_query = query if query.endswith('.bib') else query + '.bib'
-  dirname = os.path.dirname(corrected_query)
-  filename = os.path.basename(corrected_query)
-  fullpath = os.path.join(dirname, filename)
+def search_bib_file(query: str) -> Path:
+  path = Path(query).with_suffix(BIB_SUFFIX)
 
-  if dirname != '':
-    result = _search_file_by_path(fullpath)
-    if result is not None:
-      return result
+  if str(path).count(sep) > 0:
+    result = _search_file_by_path(path)
+    if result:
+      return result.absolute()
   else:
-    result = _search_file_in_current_directory(filename, False)
-    if result is not None:
-      return result
-    result = _search_file_in_bibinputs(filename, False)
-    if result is not None:
-      return result
-    result = _search_file_in_current_directory(filename, True)
-    if result is not None:
-      return result
-    result = _search_file_in_bibinputs(filename, True)
-    if result is not None:
-      return result
+    search_list = [
+      lambda: _search_file_in_current_directory(path, False),
+      lambda: _search_file_in_bibinputs(path, False),
+      lambda: _search_file_in_current_directory(path, True),
+      lambda: _search_file_in_bibinputs(path, True),
+    ]
+    for search in search_list:
+      result = search()
+      if result:
+        return result.absolute()
 
   error_msg = f'ファイルが見つかりません ({query})'
-  if dirname == '':
+  if str(path).count(sep) == 0:
     error_msg += ', 環境変数 "BIBINPUTS" の内容が正しいかあわせて確認してください'
   raise FileNotFoundError(error_msg)
 
