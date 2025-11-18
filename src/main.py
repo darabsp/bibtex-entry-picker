@@ -10,12 +10,13 @@ def main() -> None:
     args = parse_args()
     path = search_bib_file(args.bib)
     key = args.key
+    et_al = args.et_al
 
     print(f'以下のファイルを参照します: {path}')
 
     bib = parse_file(path)
     entry = search_entry(bib.entries, key)
-    formatted = Style().format_entry(None, entry).text.render_as('text')
+    formatted = Style(et_al=et_al).format_entry(None, entry).text.render_as('text')
 
     pyperclip.copy(formatted)
     print(f'コピーしました: {formatted}')
