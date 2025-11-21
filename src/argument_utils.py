@@ -10,12 +10,13 @@ def parse_args():
     'key',
     help='コピーするエントリのキー',
   )
+  # TODO: オプション単体の場合は4人以上, 数値が指定されていれば指定された人数以上でet al.を出力する
   parser.add_argument(
     '-e', '--et-al',
     action='store_const',
-    const=4,
+    const=2,
     default=None,
-    help='著者が4人以上いる場合に第一著者のみを出力する',
+    help='著者が複数人いる場合に第一著者のみを出力する',
   )
 
   return parser.parse_args()

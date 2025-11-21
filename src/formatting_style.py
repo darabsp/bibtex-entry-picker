@@ -77,7 +77,7 @@ class Style(BaseStyle, CJKUtils):
       if self.is_cjk_entry(entry):
         return words('') [self.format_first_person(entry, field_type), 'ら']
       else:
-        return words [self.format_first_person(entry, field_type), 'et al']
+        return words [self.format_first_person(entry, field_type), 'et al.']
     else:
       return self.format_persons(entry, field_type)
 
