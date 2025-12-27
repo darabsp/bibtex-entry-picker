@@ -39,3 +39,8 @@ bibpick <bib> <key>
     (サブディレクトリは検索されません)
 
 `key` が完全一致せず、部分一致検索によってエントリが一意に特定できる場合はそれがコピーされます。
+
+## License
+
+Pybtexに合わせ、MIT Licenseで公開します。
+詳細は[LICENSE](LICENSE)を参照してください。

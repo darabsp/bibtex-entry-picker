@@ -3,6 +3,7 @@ name = "bibtex-entry-picker"
 version = "0.1.0"
 description = "BibTeXのエントリを文字列に整形してクリップボードにコピーするもの"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "pybtex>=0.25.1",
